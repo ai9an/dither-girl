@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#07090d">
+  <title>Dither Girl — orbital image processor</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23b9d9ea' d='M2 2h3v3H2zm4 0h3v3H6zM2 6h3v3H2zm4 0h3v3H6zm4 0h3v3h-3zM6 10h3v3H6zm4 0h3v3h-3z'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./style.css?v=20260807-5">
+</head>
+<body>
+  <header class="topbar">
+    <a class="wordmark" href="./" aria-label="Dither Girl home">
+      <span class="wordmark-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+      <span class="wordmark-name">DITHER<span>/</span>GIRL</span>
+      <span class="wordmark-version">OS&thinsp;01</span>
+    </a>
+
+    <div class="media-readout" aria-live="polite">
+      <span class="readout-index">OBJECT</span>
+      <span id="fileMeta">No source acquired</span>
+    </div>
+
+    <nav class="command-bar" aria-label="File and history controls">
+      <button id="openFile" class="command command-open" type="button"><span class="command-plus">＋</span> Open</button>
+      <span class="command-separator" aria-hidden="true"></span>
+      <button id="undo" class="command command-icon" type="button" title="Undo settings change" aria-label="Undo settings change" disabled>↶</button>
+      <button id="redo" class="command command-icon" type="button" title="Redo settings change" aria-label="Redo settings change" disabled>↷</button>
+      <button id="reset" class="command" type="button">Reset</button>
+      <a class="command project-link" href="https://github.com/ai9an" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+    </nav>
+  </header>
+
+  <main class="app-shell">
+    <aside class="controls" aria-label="Editor controls">
+      <nav class="section-tabs" aria-label="Settings sections" role="tablist">
+        <button class="section-tab is-active" id="sourceTab" type="button" role="tab" aria-selected="true" aria-controls="sourcePanel" data-tab="source">
+          <span>01</span> Source
+        </button>
+        <button class="section-tab" id="effectsTab" type="button" role="tab" aria-selected="false" aria-controls="effectsPanel" data-tab="effects" tabindex="-1">
+          <span>02</span> Effects
+        </button>
+        <button class="section-tab" id="presetsTab" type="button" role="tab" aria-selected="false" aria-controls="presetsPanel" data-tab="presets" tabindex="-1">
+          <span>03</span> Presets
+        </button>
+      </nav>
+
+      <div class="panel-viewport">
+        <section class="tab-panel is-active" id="sourcePanel" role="tabpanel" aria-labelledby="sourceTab" data-panel="source">
+          <header class="panel-intro">
+            <span class="section-kicker">Input / output</span>
+            <h1>Source field</h1>
+            <p>Acquire a browser-native still or moving image. Processing stays on this device.</p>
+          </header>
+
+          <section class="control-group acquire-group">
+            <div class="group-heading"><h2>Acquisition</h2><span>Local only</span></div>
+            <label id="dropZone" class="drop-zone" tabindex="0">
+              <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp,video/mp4,video/webm,video/ogg">
+              <span class="drop-target" aria-hidden="true"><i></i><i></i></span>
+              <span class="drop-copy"><strong>Drop media</strong><small>or click to browse</small></span>
+              <span class="drop-code">IMG / MOV</span>
+            </label>
+            <button id="clearSource" type="button" class="quiet-action panel-action" disabled><span>×</span> Clear source</button>
+            <p class="hint">PNG, JPEG, WebP, GIF, BMP · MP4, WebM, Ogg. Native browser codecs only.</p>
+          </section>
+
+          <section class="control-group">
+            <div class="group-heading"><h2>Frame geometry</h2><span id="aspectReadout">4 : 3</span></div>
+            <div class="dimension-grid">
+              <label><span>Width <em>PX</em></span><input id="outputWidth" type="number" min="1" max="8192" value="800"></label>
+              <span class="dimension-link" aria-hidden="true">×</span>
+              <label><span>Height <em>PX</em></span><input id="outputHeight" type="number" min="1" max="8192" value="600"></label>
+            </div>
+            <label class="switch-row"><span><strong>Lock source ratio</strong><small>Keep dimensions coupled</small></span><input id="aspectLock" type="checkbox" checked><i aria-hidden="true"></i></label>
+            <label class="range-control"><span>Output scale <output for="scale">100%</output></span><input id="scale" type="range" min="5" max="200" value="100"></label>
+            <label class="range-control"><span>Dither pixel size <output for="pixelSize">1×</output></span><input id="pixelSize" type="range" min="1" max="24" value="1"></label>
+          </section>
+
+          <section class="control-group">
+            <div class="group-heading"><h2>Sampling</h2><span>Pipeline</span></div>
+            <div class="two-col">
+              <label><span>Fit mode</span><select id="fitMode"><option value="contain">Contain</option><option value="cover">Cover</option><option value="stretch">Stretch</option></select></label>
+              <label><span>Resample</span><select id="resample"><option value="nearest">Nearest</option><option value="smooth">Smooth</option></select></label>
+            </div>
+          </section>
+
+          <section class="control-group export-options">
+            <div class="group-heading"><h2>Encoding</h2><span>Destination</span></div>
+            <div id="imageExport">
+              <label><span>Image format</span><select id="imageFormat"><option value="image/png">PNG — lossless</option><option value="image/jpeg">JPEG</option><option value="image/webp">WebP</option></select></label>
+            </div>
+            <div id="videoExport" hidden>
+              <p id="videoFormat" class="hint">Video format follows browser MediaRecorder support.</p>
+              <progress id="exportProgress" max="1" value="0"><span>0%</span></progress>
+            </div>
+          </section>
+        </section>
+
+        <section class="tab-panel" id="effectsPanel" role="tabpanel" aria-labelledby="effectsTab" data-panel="effects" hidden>
+          <header class="panel-intro">
+            <span class="section-kicker">Signal treatment</span>
+            <h1>Effects stack</h1>
+            <p>Shape the source, diffuse the error, then constrain the resulting colour field.</p>
+            <button id="resetEffects" type="button" class="quiet-action panel-action"><span>↺</span> Reset effects</button>
+          </header>
+
+          <section id="ditherGroup" class="control-group effect-group">
+            <div class="group-heading"><h2>Dither matrix</h2><div class="group-tools"><span id="algorithmFamily">Diffusion</span><label class="mini-switch"><span class="sr-only">Enable dithering</span><input id="ditherEnabled" type="checkbox" checked><i aria-hidden="true"></i><b>ON</b></label></div></div>
+            <label><span>Algorithm</span><select id="algorithm"></select></label>
+            <div id="halftoneControls" class="two-col">
+              <label class="range-control"><span>Dot angle <output for="dotAngle">45°</output></span><input id="dotAngle" type="range" min="0" max="180" value="45"></label>
+              <label class="range-control"><span>Dot size <output for="dotSize">6</output></span><input id="dotSize" type="range" min="2" max="24" value="6"></label>
+            </div>
+            <label id="thresholdControl" class="range-control"><span>Threshold <output for="threshold">128</output></span><input id="threshold" type="range" min="0" max="255" value="128"></label>
+          </section>
+
+          <section id="chromaticGroup" class="control-group effect-group">
+            <div class="group-heading"><h2>Chromatic map</h2><div class="group-tools"><span>Tone</span><label class="mini-switch"><span class="sr-only">Enable chromatic mapping</span><input id="chromaticEnabled" type="checkbox" checked><i aria-hidden="true"></i><b>ON</b></label></div></div>
+            <label><span>Grayscale channel</span>
+              <select id="grayscale">
+                <option value="none">Off / full colour</option><option value="luminosity">Luminosity</option><option value="average">Average</option><option value="red">Red channel</option><option value="green">Green channel</option><option value="blue">Blue channel</option>
+              </select>
+            </label>
+            <label><span>Gradient map</span><select id="gradientMode"><option value="none">Off</option><option value="duotone">Duotone</option><option value="tritone">Tritone</option></select></label>
+            <div class="colour-row">
+              <label><span>Shadow</span><input id="shadowColor" type="color" value="#151515"></label>
+              <label><span>Mid</span><input id="midColor" type="color" value="#8f8f8f"></label>
+              <label><span>Light</span><input id="highlightColor" type="color" value="#f5f5f5"></label>
+            </div>
+          </section>
+
+          <section id="responseGroup" class="control-group effect-group">
+            <div class="group-heading"><h2>Image response</h2><div class="group-tools"><span>Adjust</span><label class="mini-switch"><span class="sr-only">Enable image response controls</span><input id="adjustmentsEnabled" type="checkbox" checked><i aria-hidden="true"></i><b>ON</b></label></div></div>
+            <div class="range-grid">
+              <label class="range-control"><span>Brightness <output for="brightness">0</output></span><input id="brightness" type="range" min="-100" max="100" value="0"></label>
+              <label class="range-control"><span>Contrast <output for="contrast">0</output></span><input id="contrast" type="range" min="-100" max="100" value="0"></label>
+              <label class="range-control"><span>Gamma <output for="gamma">1</output></span><input id="gamma" type="range" min="0.2" max="3" step="0.05" value="1"></label>
+              <label class="range-control"><span>Black level <output for="levelBlack">0</output></span><input id="levelBlack" type="range" min="0" max="254" value="0"></label>
+              <label class="range-control"><span>White level <output for="levelWhite">255</output></span><input id="levelWhite" type="range" min="1" max="255" value="255"></label>
+              <label class="range-control"><span>Posterize <output for="posterize">256</output></span><input id="posterize" type="range" min="2" max="256" value="256"></label>
+              <label class="range-control"><span>Hue rotation <output for="hue">0°</output></span><input id="hue" type="range" min="-180" max="180" value="0"></label>
+              <label class="range-control"><span>Saturation <output for="saturation">100%</output></span><input id="saturation" type="range" min="0" max="200" value="100"></label>
+              <label class="range-control"><span>Surface grain <output for="grain">0</output></span><input id="grain" type="range" min="0" max="100" value="0"></label>
+            </div>
+            <label class="switch-row"><span><strong>Invert colours</strong><small>Reverse channel values</small></span><input id="invert" type="checkbox"><i aria-hidden="true"></i></label>
+          </section>
+
+          <section class="control-group artifact-group">
+            <div class="group-heading"><h2>Signal artifacts</h2><span>Experimental</span></div>
+            <label class="switch-row"><span><strong>Chromatic drift</strong><small>Separate red and blue signal planes</small></span><input id="chromaticDriftEnabled" type="checkbox"><i aria-hidden="true"></i></label>
+            <label id="chromaticDriftControl" class="range-control dependent-control"><span>Drift distance <output for="chromaticDrift">4 PX</output></span><input id="chromaticDrift" type="range" min="1" max="24" value="4"></label>
+            <label class="switch-row"><span><strong>Scanline field</strong><small>Modulate rows like a deep-space display</small></span><input id="scanlinesEnabled" type="checkbox"><i aria-hidden="true"></i></label>
+            <div id="scanlineControls" class="two-col dependent-control">
+              <label class="range-control"><span>Strength <output for="scanlineStrength">24%</output></span><input id="scanlineStrength" type="range" min="1" max="80" value="24"></label>
+              <label class="range-control"><span>Spacing <output for="scanlineSpacing">4 PX</output></span><input id="scanlineSpacing" type="range" min="2" max="12" value="4"></label>
+            </div>
+          </section>
+
+          <section class="control-group palette-group">
+            <div class="group-heading"><h2>Palette chamber</h2><span id="swatchCount">32 colours</span></div>
+            <label><span>Palette preset</span><select id="palettePreset"></select></label>
+            <div id="swatches" class="swatches"></div>
+            <button id="addSwatch" type="button" class="quiet-action"><span>＋</span> Add swatch</button>
+            <label class="switch-row"><span><strong>Map to palette</strong><small>Use selected swatches</small></span><input id="usePalette" type="checkbox"><i aria-hidden="true"></i></label>
+            <label class="switch-row"><span><strong>Median-cut source</strong><small>Extract colours first</small></span><input id="quantize" type="checkbox"><i aria-hidden="true"></i></label>
+            <label class="range-control"><span>Quantized colours <output for="quantizeColors">8</output></span><input id="quantizeColors" type="range" min="2" max="32" value="8"></label>
+          </section>
+        </section>
+
+        <section class="tab-panel" id="presetsPanel" role="tabpanel" aria-labelledby="presetsTab" data-panel="presets" hidden>
+          <header class="panel-intro">
+            <span class="section-kicker">Stored trajectories</span>
+            <h1>Presets</h1>
+            <p>Move through ready-made treatments or preserve the current stack locally in this browser.</p>
+          </header>
+
+          <section class="control-group preset-library">
+            <div class="group-heading"><h2>Built-in signals</h2><span>09</span></div>
+            <label class="sr-only" for="preset">Preset</label>
+            <select id="preset" class="sr-only" tabindex="-1"></select>
+            <div id="presetGrid" class="preset-grid" aria-label="Built-in presets"></div>
+          </section>
+
+          <section class="control-group saved-presets">
+            <div class="group-heading"><h2>Local library</h2><span id="presetStorageScope">Local browser</span></div>
+            <form id="savePresetForm" class="save-preset-form">
+              <label><span>Preset name</span><input id="presetName" type="text" maxlength="32" placeholder="Untitled signal" autocomplete="off"></label>
+              <button type="submit" class="quiet-action"><span>＋</span> Capture current stack</button>
+            </form>
+            <div id="savedPresetList" class="saved-preset-list"><p class="empty-list">No local presets captured.</p></div>
+          </section>
+        </section>
+      </div>
+
+      <footer class="export-dock">
+        <div class="export-readout"><span id="exportKind">No source</span><strong id="exportDimensions">800 × 600</strong></div>
+        <button id="exportImage" class="export-button" type="button" disabled><span>Export image</span><i aria-hidden="true">↗</i></button>
+        <button id="exportVideo" class="export-button" type="button" disabled hidden><span>Record video</span><i aria-hidden="true">●</i></button>
+      </footer>
+    </aside>
+
+    <section class="stage" aria-label="Preview workspace">
+      <canvas id="orbitalScene" class="orbital-scene" aria-hidden="true"></canvas>
+      <div class="stage-noise" aria-hidden="true"></div>
+
+      <header class="preview-toolbar">
+        <div class="preview-title">
+          <span class="live-indicator" aria-hidden="true"></span>
+          <span>Preview</span>
+          <strong id="previewAlgorithm">Floyd–Steinberg</strong>
+        </div>
+        <div class="preview-actions">
+          <label class="inline-select"><span>Quality</span><select id="previewQuality"><option value="auto">Auto</option><option value="full">Full</option></select></label>
+          <label class="inline-select"><span>Zoom</span><select id="previewZoom"><option value="fit">Fit</option><option value="50">50%</option><option value="100">100%</option><option value="200">200%</option></select></label>
+          <button id="compareSource" class="preview-action" type="button" disabled aria-pressed="false"><span class="compare-symbol" aria-hidden="true"></span> Original</button>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <div class="coordinate coordinate-x" aria-hidden="true"><span>−X</span><i></i><span>+X</span></div>
+        <div class="coordinate coordinate-y" aria-hidden="true"><span>+Y</span><i></i><span>−Y</span></div>
+
+        <div id="canvasViewport" class="canvas-viewport">
+          <div id="canvasStack" class="canvas-stack">
+            <canvas id="preview" width="800" height="600"></canvas>
+            <canvas id="originalPreview" width="800" height="600" aria-label="Original source preview"></canvas>
+            <span class="frame-corner corner-a" aria-hidden="true"></span><span class="frame-corner corner-b" aria-hidden="true"></span><span class="frame-corner corner-c" aria-hidden="true"></span><span class="frame-corner corner-d" aria-hidden="true"></span>
+          </div>
+
+          <div id="emptyState" class="empty-state">
+            <div class="orbital-label"><span>DG–01 / CALISTO ARRAY</span><i></i><span>AWAITING SIGNAL</span></div>
+            <button id="emptyOpen" type="button" class="empty-open">
+              <span class="empty-reticle" aria-hidden="true"><i></i><i></i><i></i></span>
+              <strong>Acquire a source</strong>
+              <small>Drop image or video anywhere in the field</small>
+            </button>
+            <p>Nothing leaves your browser.<br>Native media decode / local pixel compute.</p>
+          </div>
+        </div>
+
+        <footer class="stage-footer">
+          <p id="status" class="status" role="status" aria-live="polite" aria-atomic="true" data-state="idle"><i class="status-indicator" aria-hidden="true"></i><span>SYS </span><b>Drop an image or video to begin.</b></p>
+          <div class="stage-metrics" aria-label="Preview metrics"><span>RGB</span><span id="previewDimensions">800 × 600 PX</span><span id="workerStatus">CPU / READY</span></div>
+        </footer>
+      </div>
+
+      <div id="videoControls" class="video-controls" hidden>
+        <button id="playPause" type="button"><span aria-hidden="true">▶</span><strong>Play</strong></button>
+        <input id="seek" type="range" min="0" max="1" step="0.001" value="0" aria-label="Video position">
+        <span id="timeLabel">0:00 / 0:00</span>
+      </div>
+      <video id="sourceVideo" playsinline preload="metadata" hidden></video>
+      <canvas id="sourceCanvas" hidden></canvas>
+    </section>
+  </main>
+
+  <div id="controlTooltip" class="control-tooltip" role="tooltip" hidden></div>
+  <script type="module" src="./js/main.js?v=20260807-5"></script>
+</body>
+</html>
