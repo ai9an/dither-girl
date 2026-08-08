@@ -819,6 +819,39 @@ progress::-moz-progress-bar { background: repeating-linear-gradient(90deg, var(-
   .panel-intro, .control-group { padding-left: 17px; padding-right: 17px; }
 }
 
+/* Give touch users a full finger-sized target while keeping the desktop controls compact. */
+@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+  input[type="range"] {
+    height: 44px;
+    touch-action: pan-y;
+  }
+
+  input[type="range"]::-webkit-slider-runnable-track { height: 4px; }
+  input[type="range"]::-moz-range-track { height: 4px; }
+  input[type="range"]::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+    margin-top: -12px;
+    box-shadow: 0 0 0 5px rgba(185, 217, 234, .08), 0 0 12px rgba(185, 217, 234, .3);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    box-shadow: 0 0 0 5px rgba(185, 217, 234, .08), 0 0 12px rgba(185, 217, 234, .3);
+  }
+
+  input[type="range"]:active::-webkit-slider-thumb {
+    border-color: var(--ice-bright);
+    background: #18232d;
+    box-shadow: 0 0 0 7px rgba(185, 217, 234, .14), 0 0 16px rgba(185, 217, 234, .48);
+  }
+  input[type="range"]:active::-moz-range-thumb {
+    border-color: var(--ice-bright);
+    background: #18232d;
+    box-shadow: 0 0 0 7px rgba(185, 217, 234, .14), 0 0 16px rgba(185, 217, 234, .48);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
 }
